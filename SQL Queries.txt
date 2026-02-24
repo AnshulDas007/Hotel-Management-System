@@ -1,0 +1,150 @@
+1. Calculate the Total Reservation Cost for Confirmed Reservations Only
+This query calls the calculate_total_cost function for all reservations that have a status of 'Confirmed'. It retrieves reservation details, including guest and room information, along with the calculated cost
+
+SELECT
+    R.resID,
+    G.name AS GuestName,
+    R.checkInDate,
+    R.checkOutDate,
+    RM.type AS RoomType,
+    RM.pricePerNight,
+    calculate_total_cost(R.resID) AS TotalCost
+FROM
+    Reservation R
+JOIN
+    Guest G ON R.guestID = G.guestID
+JOIN
+    Room RM ON R.roomID = RM.roomID
+WHERE
+    R.status = 'Confirmed'
+ORDER BY
+    R.checkInDate;
+
+2. Trigger Room Status Update After Reservation Status Change
+This query simulates an update on a reservation’s status, which will fire the trg_update_room_status trigger to update the associated room's status. The trigger logic will mark the room as 'Occupied' when the reservation is 'Confirmed' and 'Available' if it’s 'Checked Out' or 'Cancelled'.
+
+-- Assume reservation ID 301 is confirmed, we change it to 'Checked Out'
+UPDATE Reservation
+SET status = 'Checked Out'
+WHERE resID = 301;
+
+-- This will fire the trg_update_room_status trigger and update the corresponding room status.
+
+3. Assign Staff to Provide Room Service on Specific Dates
+Using the assign_staff_to_service procedure, this query assigns staff to provide room services based on existing room service entries. This procedure will insert records into the RoomService table for each service and output assignment details.
+
+DECLARE
+    v_service_details CLOB := 'In-room dining for guest';
+BEGIN
+    -- Example assigning staff with ID 401 to provide service ID 504 (Meal) in room 201
+    assign_staff_to_service(401, 504, 201, TO_DATE('2024-01-15', 'YYYY-MM-DD'), v_service_details);
+
+    -- Example assigning staff with ID 407 to provide service ID 507 (Massage) in room 207
+    assign_staff_to_service(407, 507, 207, TO_DATE('2024-07-07', 'YYYY-MM-DD'), 'Massage session for guest relaxation');
+END;
+
+4. Retrieve Guest Details and Service Information for High-Spending Guests
+This query retrieves detailed guest and service information for guests whose total amount spent exceeds a certain threshold (e.g., $1000). It includes data from the Guest, Reservation, Payment, and Service tables and lists the services provided to each guest.
+
+SELECT
+    G.guestID,
+    G.name AS GuestName,
+    G.email,
+    SUM(P.amt) AS TotalSpent,
+    S.serviceType AS ServiceProvided,
+    S.price AS ServicePrice,
+    RS.serviceDate
+FROM
+    Guest G
+JOIN
+    Reservation R ON G.guestID = R.guestID
+JOIN
+    Payment P ON R.resID = P.reservationID
+JOIN
+    GuestService GS ON G.guestID = GS.guestID
+JOIN
+    Service S ON GS.serviceID = S.serviceID
+LEFT JOIN
+    RoomService RS ON RS.serviceID = S.serviceID AND RS.roomID = R.roomID
+WHERE
+    P.status = 'Completed'
+GROUP BY
+    G.guestID, G.name, G.email, S.serviceType, S.price, RS.serviceDate
+HAVING
+    SUM(P.amt) > 1000
+ORDER BY
+    TotalSpent DESC;
+
+5. Retrieve Detailed Service History and Cost for Each Guest's Reservation
+This query lists all the services associated with each reservation, showing detailed service costs and including any assigned staff details for that service. It joins multiple tables to compile the reservation, guest, service, and room service details in a single report.
+
+SELECT
+    S.serviceID as serviceID,
+    G.name AS GuestName,
+    R.resID,
+    R.checkInDate,
+    R.checkOutDate,
+    S.serviceType,
+    S.price AS ServicePrice,
+    RS.serviceDate AS ServiceProvidedDate,
+    ST.name AS StaffAssigned
+FROM
+    Reservation R
+JOIN
+    Guest G ON R.guestID = G.guestID
+JOIN
+    ReservationRoom RR ON R.resID = RR.reservationID
+JOIN
+    RoomService RS ON RR.roomID = RS.roomID
+JOIN
+    Service S ON RS.serviceID = S.serviceID
+LEFT JOIN
+    Staff ST ON RS.staffID = ST.staffID
+WHERE
+    R.status IN ('Confirmed', 'Checked Out')
+ORDER BY
+    G.name, R.checkInDate, RS.serviceDate;
+
+6.  Query: Identify Guests with the Longest Cumulative Stay Across Multiple Reservations
+This query calculates the total stay duration (in days) for each guest, summing up the lengths of all their reservations, and identifies the top 3 guests with the longest cumulative stay.
+
+SELECT 
+    G.guestID,
+    G.name AS GuestName,
+    SUM(
+        CASE 
+            WHEN R.checkOutDate IS NOT NULL 
+            THEN R.checkOutDate - R.checkInDate 
+            ELSE SYSDATE - R.checkInDate 
+        END
+    ) AS TotalStayDays
+FROM 
+    Guest G
+JOIN 
+    Reservation R ON G.guestID = R.guestID
+GROUP BY 
+    G.guestID, G.name
+ORDER BY 
+    TotalStayDays DESC;
+
+7. Query: Find the Staff Member Handling the Most Services
+This query identifies the staff member who has been assigned the highest number of services, along with details of the most frequent service type they handle.
+
+SELECT 
+    ST.staffID,
+    ST.name AS StaffName,
+    S.serviceType,
+    COUNT(RS.serviceID) AS ServicesHandled
+FROM 
+    Staff ST
+JOIN 
+    RoomService RS ON ST.staffID = RS.staffID
+JOIN 
+    Service S ON RS.serviceID = S.serviceID
+GROUP BY 
+    ST.staffID, ST.name, S.serviceType
+ORDER BY 
+    ServicesHandled DESC
+FETCH FIRST 1 ROWS ONLY;
+
+
