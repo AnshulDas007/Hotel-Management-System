@@ -1,0 +1,105 @@
+-- Guest Table
+CREATE TABLE Guest (
+    guestID NUMBER PRIMARY KEY,
+    name VARCHAR2(100) NOT NULL,
+    contactNo VARCHAR2(15) NOT NULL,
+    email VARCHAR2(100) NOT NULL UNIQUE,
+    address VARCHAR2(100) NOT NULL,
+    dob DATE NOT NULL,
+    nationality VARCHAR2(50) NOT NULL
+);
+
+-- Room Table
+CREATE TABLE Room (
+    roomID NUMBER PRIMARY KEY,
+    roomNum NUMBER NOT NULL,
+    type VARCHAR2(50) NOT NULL,
+    pricePerNight NUMBER(10, 2) NOT NULL,
+    status VARCHAR2(20) NOT NULL,
+    floor NUMBER NOT NULL,
+    viewSite VARCHAR2(50)
+);
+
+-- Reservation Table
+CREATE TABLE Reservation (
+    resID NUMBER PRIMARY KEY,
+    guestID NUMBER,
+    roomID NUMBER,
+    checkInDate DATE,
+    checkOutDate DATE,
+    status VARCHAR2(20) NOT NULL,
+    totalAmount NUMBER(10,2) NOT NULL,
+    FOREIGN KEY (guestID) REFERENCES Guest(guestID) ON DELETE CASCADE,
+    FOREIGN KEY (roomID) REFERENCES Room(roomID) ON DELETE CASCADE
+);
+
+-- Junction Table for Reservation and Room (Many-to-Many relationship)
+CREATE TABLE ReservationRoom (
+    reservationID NUMBER,
+    roomID NUMBER,
+    PRIMARY KEY (reservationID, roomID),
+    FOREIGN KEY (reservationID) REFERENCES Reservation(resID) ON DELETE CASCADE,
+    FOREIGN KEY (roomID) REFERENCES Room(roomID) ON DELETE CASCADE
+);
+
+-- Staff Table
+CREATE TABLE Staff (
+    staffID NUMBER PRIMARY KEY,
+    name VARCHAR2(100) NOT NULL,
+    position VARCHAR2(50) NOT NULL,
+    contactNum VARCHAR2(15) NOT NULL UNIQUE,
+    email VARCHAR2(100) NOT NULL UNIQUE,
+    hireDate DATE
+);
+
+-- Service Table
+CREATE TABLE Service (
+    serviceID NUMBER PRIMARY KEY,
+    serviceType VARCHAR2(50) NOT NULL,
+    description CLOB NOT NULL,
+    price NUMBER(10, 2) NOT NULL
+);
+
+-- Junction Table for Guest and Service (Many-to-Many relationship)
+CREATE TABLE GuestService (
+    guestID NUMBER,
+    serviceID NUMBER,
+    PRIMARY KEY (guestID, serviceID),
+    FOREIGN KEY (guestID) REFERENCES Guest(guestID) ON DELETE CASCADE,
+    FOREIGN KEY (serviceID) REFERENCES Service(serviceID) ON DELETE CASCADE
+);
+
+-- Junction Table for Staff and Service (Many-to-Many relationship)
+CREATE TABLE StaffService (
+    staffID NUMBER,
+    serviceID NUMBER,
+    PRIMARY KEY (staffID, serviceID),
+    FOREIGN KEY (staffID) REFERENCES Staff(staffID) ON DELETE CASCADE,
+    FOREIGN KEY (serviceID) REFERENCES Service(serviceID) ON DELETE CASCADE
+);
+
+-- Payment Table
+CREATE TABLE Payment (
+    paymentID NUMBER PRIMARY KEY,
+    reservationID NUMBER,
+    guestID NUMBER,
+    paymentDate DATE,
+    amt NUMBER(10, 2) NOT NULL,
+    paymentMethod VARCHAR2(50) NOT NULL,
+    status VARCHAR2(20) NOT NULL,
+    FOREIGN KEY (reservationID) REFERENCES Reservation(resID) ON DELETE CASCADE,
+    FOREIGN KEY (guestID) REFERENCES Guest(guestID) ON DELETE CASCADE
+);
+
+-- Room Service Table
+CREATE TABLE RoomService (
+    roomServiceID NUMBER PRIMARY KEY,
+    roomID NUMBER,
+    serviceID NUMBER,
+    staffID NUMBER,
+    serviceDate DATE NOT NULL,
+    serviceDetails CLOB NOT NULL,
+    FOREIGN KEY (roomID) REFERENCES Room(roomID) ON DELETE CASCADE,
+    FOREIGN KEY (serviceID) REFERENCES Service(serviceID) ON DELETE CASCADE,
+    FOREIGN KEY (staffID) REFERENCES Staff(staffID) ON DELETE CASCADE
+);
