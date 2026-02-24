@@ -16,12 +16,12 @@ This project implements a fully normalized database schema that models the core 
 ```
 Hotel Management System - DBMS/
 │
-├── DBMS Phase 2 Project.sql    # Complete MySQL schema + sample data
+├── Hotel_Schema.sql            # Complete MySQL schema + sample data
 ├── SQL tables.txt              # Oracle/PL*SQL table definitions
 ├── SQL Queries.txt             # 7 analytical queries (Oracle dialect)
 ├── PLSQL for project.txt       # Triggers, functions & procedures
 ├── ER Diagram.jpg              # Entity-Relationship diagram
-├── DBMS Phase 2 Project.pdf    # Project report document
+├── Project_Report.pdf          # Project report document
 │
 ├── README.md                   # This file
 ├── Project_Requirements.md     # Project Requirements Document (PRD)
@@ -58,7 +58,7 @@ Hotel Management System - DBMS/
 
 ```sql
 -- Run the complete setup script
-source DBMS\ Phase\ 2\ Project.sql;
+source Hotel_Schema.sql;
 ```
 
 This will create the `hotel` database, all 9 tables, and insert 10 sample records into each table.
